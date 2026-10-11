@@ -49,3 +49,30 @@ async def test_server_error_then_success():
     assert result["status"] == 200
     assert result["attempts"] == 2
     assert route.call_count == 2
+
+
+@respx.mock
+async def test_gives_up_after_three_attempts():
+    route = respx.get("https://example.com").mock(
+        return_value=httpx.Response(500)
+    )
+
+    result = await check_url("https://example.com")
+
+    assert result["status"] == 500
+    assert result["attempts"] == 3
+    assert route.call_count == 3
+
+
+@respx.mock
+async def test_timeout_is_reported():
+    route = respx.get("https://example.com").mock(
+        side_effect=httpx.ConnectTimeout("too slow")
+    )
+
+    result = await check_url("https://example.com")
+
+    assert result["status"] is None
+    assert result["error"] == "timeout"
+    assert result["attempts"] == 3
+    assert route.call_count == 3
