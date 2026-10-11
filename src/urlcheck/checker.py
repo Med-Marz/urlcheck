@@ -1,10 +1,12 @@
+import asyncio
 import time
 import httpx
 
 
-def check_url(url):
+async def check_url(url):
     start = time.time()
-    response = httpx.get(url, follow_redirects=True, timeout=5.0)
+    async with httpx.AsyncClient(follow_redirects=True, timeout=5.0) as client:
+        response = await client.get(url)
     end = time.time()
     return {
         "url": url,
@@ -13,5 +15,9 @@ def check_url(url):
     }
 
 
-print(check_url("https://github.com"))
-print(check_url("https://python.org"))
+async def main():
+    print(await check_url("https://github.com"))
+    print(await check_url("https://python.org"))
+
+
+asyncio.run(main())
