@@ -1,9 +1,13 @@
 import time
 import httpx
 
-start = time.time()
-response = httpx.get("https://github.com")
-end = time.time()
 
-print(response.status_code)
-print(end - start)
+def check_url(url):
+    start = time.time()
+    response = httpx.get(url)
+    end = time.time()
+    return response.status_code, end - start
+
+
+print(check_url("https://github.com"))
+print(check_url("https://python.org"))
