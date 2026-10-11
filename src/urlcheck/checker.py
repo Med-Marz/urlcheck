@@ -16,8 +16,13 @@ async def check_url(url):
 
 
 async def main():
-    print(await check_url("https://github.com"))
-    print(await check_url("https://python.org"))
+    results = await asyncio.gather(
+        check_url("https://github.com"),
+        check_url("https://python.org"),
+        check_url("https://wikipedia.org"),
+    )
+    for result in results:
+        print(result)
 
 
 asyncio.run(main())
