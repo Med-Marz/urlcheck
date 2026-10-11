@@ -2,7 +2,7 @@ import httpx
 import pytest
 import respx
 
-from urlcheck.checker import check_url
+from urlcheck.checker import check_url, check_urls
 
 
 @pytest.fixture(autouse=True)
@@ -76,3 +76,17 @@ async def test_timeout_is_reported():
     assert result["error"] == "timeout"
     assert result["attempts"] == 3
     assert route.call_count == 3
+
+
+@respx.mock
+async def test_check_urls_returns_all_results_in_order():
+    respx.get("https://a.example").mock(return_value=httpx.Response(200))
+    respx.get("https://b.example").mock(return_value=httpx.Response(404))
+    respx.get("https://c.example").mock(return_value=httpx.Response(200))
+
+    results = await check_urls(
+        ["https://a.example", "https://b.example", "https://c.example"],
+        max_concurrent=2,
+    )
+
+    assert [r["status"] for r in results] == [200, 404, 200]
