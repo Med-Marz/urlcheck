@@ -39,13 +39,27 @@ async def check_url(url, max_attempts=3):
     }
 
 
+async def check_urls(urls, max_concurrent=10):
+    semaphore = asyncio.Semaphore(max_concurrent)
+
+    async def limited_check(url):
+        async with semaphore:
+            return await check_url(url)
+
+    tasks = []
+    for url in urls:
+        tasks.append(limited_check(url))
+    return await asyncio.gather(*tasks)
+
+
 async def main():
-    results = await asyncio.gather(
-        check_url("https://github.com"),
-        check_url("https://python.org"),
-        check_url("https://wikipedia.org"),
-        check_url("https://this-does-not-exist-12345.com"),
-    )
+    urls = [
+        "https://github.com",
+        "https://python.org",
+        "https://wikipedia.org",
+        "https://this-does-not-exist-12345.com",
+    ]
+    results = await check_urls(urls)
     for result in results:
         print(result)
 
