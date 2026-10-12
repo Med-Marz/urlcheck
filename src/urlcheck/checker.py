@@ -3,13 +3,13 @@ import time
 import httpx
 
 
-async def check_url(url, max_attempts=3):
+async def check_url(url, max_attempts=3, timeout=5.0):
     start = time.time()
     status = None
     error = None
     attempts = 0
 
-    async with httpx.AsyncClient(follow_redirects=True, timeout=5.0) as client:
+    async with httpx.AsyncClient(follow_redirects=True, timeout=timeout) as client:
         for attempt in range(1, max_attempts + 1):
             attempts = attempt
             try:
@@ -39,12 +39,12 @@ async def check_url(url, max_attempts=3):
     }
 
 
-async def check_urls(urls, max_concurrent=10):
+async def check_urls(urls, max_concurrent=10, timeout=5.0):
     semaphore = asyncio.Semaphore(max_concurrent)
 
     async def limited_check(url):
         async with semaphore:
-            return await check_url(url)
+            return await check_url(url, timeout=timeout)
 
     tasks = []
     for url in urls:

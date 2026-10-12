@@ -3,7 +3,14 @@ import pytest
 import respx
 
 from urlcheck.checker import check_url, check_urls
-
+from urlcheck.cli import (
+    build_parser,
+    exit_code,
+    read_urls,
+    run,
+    split_valid_urls,
+    summarize,
+)
 
 @pytest.fixture(autouse=True)
 def no_sleep(monkeypatch):
@@ -90,3 +97,80 @@ async def test_check_urls_returns_all_results_in_order():
     )
 
     assert [r["status"] for r in results] == [200, 404, 200]
+
+
+def test_read_urls_skips_blank_lines_and_comments(tmp_path):
+    file = tmp_path / "urls.txt"
+    file.write_text("https://a.example\n\n# a comment\n  https://b.example  \n")
+
+    assert read_urls(file) == ["https://a.example", "https://b.example"]
+
+
+def test_split_valid_urls_separates_bad_entries():
+    valid, invalid = split_valid_urls(
+        ["https://a.example", "github.com", "ftp://b.example", "http://", "not a url"]
+    )
+
+    assert valid == ["https://a.example"]
+    assert invalid == ["github.com", "ftp://b.example", "http://", "not a url"]
+
+
+@respx.mock
+async def test_run_checks_valid_urls_and_skips_invalid(tmp_path):
+    respx.get("https://a.example").mock(return_value=httpx.Response(200))
+    file = tmp_path / "urls.txt"
+    file.write_text("https://a.example\nnot a url\n")
+
+    results = await run(file)
+
+    assert len(results) == 1
+    assert results[0]["url"] == "https://a.example"
+    assert results[0]["status"] == 200
+
+
+def test_summarize_counts_successes_and_failures():
+    results = [
+        {"url": "a", "status": 200, "error": None, "attempts": 1, "seconds": 1.0},
+        {"url": "b", "status": 404, "error": None, "attempts": 1, "seconds": 2.0},
+        {"url": "c", "status": None, "error": "timeout", "attempts": 3, "seconds": 3.0},
+    ]
+
+    summary = summarize(results)
+
+    assert summary == {
+        "total": 3,
+        "succeeded": 1,
+        "failed": 2,
+        "average_seconds": 2.0,
+    }
+
+
+def test_exit_code_is_zero_when_all_succeed():
+    assert exit_code({"total": 2, "succeeded": 2, "failed": 0}) == 0
+
+
+def test_exit_code_is_one_when_any_fails():
+    assert exit_code({"total": 2, "succeeded": 1, "failed": 1}) == 1
+
+
+def test_flags_override_defaults():
+    args = build_parser().parse_args(["urls.txt", "--timeout", "2", "--concurrency", "3"])
+
+    assert args.timeout == 2.0
+    assert args.concurrency == 3
+
+
+def test_environment_variables_set_defaults(monkeypatch):
+    monkeypatch.setenv("URLCHECK_TIMEOUT", "7")
+
+    args = build_parser().parse_args(["urls.txt"])
+
+    assert args.timeout == 7.0
+
+
+def test_flag_wins_over_environment(monkeypatch):
+    monkeypatch.setenv("URLCHECK_TIMEOUT", "7")
+
+    args = build_parser().parse_args(["urls.txt", "--timeout", "2"])
+
+    assert args.timeout == 2.0
