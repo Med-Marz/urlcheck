@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import json
+import os
 import sys
 from urllib.parse import urlparse
 
@@ -34,12 +35,12 @@ def split_valid_urls(urls):
     return valid, invalid
 
 
-async def run(path):
+async def run(path, timeout=5.0, max_concurrent=10):
     urls = read_urls(path)
     valid, invalid = split_valid_urls(urls)
     for url in invalid:
         print(f"Skipping invalid URL: {url}", file=sys.stderr)
-    return await check_urls(valid)
+    return await check_urls(valid, max_concurrent=max_concurrent, timeout=timeout)
 
 
 def summarize(results):
@@ -65,15 +66,33 @@ def exit_code(summary):
     return 0
 
 
-def main():
+def build_parser():
     parser = argparse.ArgumentParser(
         prog="urlcheck", description="Check whether websites respond."
     )
     parser.add_argument("file", help="text file with one URL per line")
     parser.add_argument("--output", help="save the JSON report to this file")
-    args = parser.parse_args()
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=float(os.environ.get("URLCHECK_TIMEOUT", 5.0)),
+        help="seconds to wait per request (env: URLCHECK_TIMEOUT, default 5)",
+    )
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=int(os.environ.get("URLCHECK_CONCURRENCY", 10)),
+        help="maximum simultaneous checks (env: URLCHECK_CONCURRENCY, default 10)",
+    )
+    return parser
 
-    results = asyncio.run(run(args.file))
+
+def main():
+    args = build_parser().parse_args()
+
+    results = asyncio.run(
+        run(args.file, timeout=args.timeout, max_concurrent=args.concurrency)
+    )
     report = json.dumps(results, indent=2)
 
     if args.output:

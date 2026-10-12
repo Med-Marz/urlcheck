@@ -3,8 +3,14 @@ import pytest
 import respx
 
 from urlcheck.checker import check_url, check_urls
-from urlcheck.cli import exit_code, read_urls, run, split_valid_urls, summarize
-
+from urlcheck.cli import (
+    build_parser,
+    exit_code,
+    read_urls,
+    run,
+    split_valid_urls,
+    summarize,
+)
 
 @pytest.fixture(autouse=True)
 def no_sleep(monkeypatch):
@@ -145,3 +151,26 @@ def test_exit_code_is_zero_when_all_succeed():
 
 def test_exit_code_is_one_when_any_fails():
     assert exit_code({"total": 2, "succeeded": 1, "failed": 1}) == 1
+
+
+def test_flags_override_defaults():
+    args = build_parser().parse_args(["urls.txt", "--timeout", "2", "--concurrency", "3"])
+
+    assert args.timeout == 2.0
+    assert args.concurrency == 3
+
+
+def test_environment_variables_set_defaults(monkeypatch):
+    monkeypatch.setenv("URLCHECK_TIMEOUT", "7")
+
+    args = build_parser().parse_args(["urls.txt"])
+
+    assert args.timeout == 7.0
+
+
+def test_flag_wins_over_environment(monkeypatch):
+    monkeypatch.setenv("URLCHECK_TIMEOUT", "7")
+
+    args = build_parser().parse_args(["urls.txt", "--timeout", "2"])
+
+    assert args.timeout == 2.0
