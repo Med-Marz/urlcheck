@@ -224,3 +224,34 @@ def test_health_returns_ok():
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+@respx.mock
+def test_check_endpoint_returns_results():
+    respx.get("https://a.example").mock(return_value=httpx.Response(200))
+    client = TestClient(app)
+
+    response = client.post("/check", json={"urls": ["https://a.example"]})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["url"] == "https://a.example"
+    assert body[0]["status"] == 200
+
+
+def test_check_endpoint_rejects_empty_list():
+    client = TestClient(app)
+
+    response = client.post("/check", json={"urls": []})
+
+    assert response.status_code == 422
+
+
+def test_check_endpoint_rejects_more_than_100_urls():
+    client = TestClient(app)
+    urls = [f"https://site{i}.example" for i in range(101)]
+
+    response = client.post("/check", json={"urls": urls})
+
+    assert response.status_code == 422

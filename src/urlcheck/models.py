@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CheckResult(BaseModel):
@@ -7,3 +7,7 @@ class CheckResult(BaseModel):
     error: str | None
     attempts: int
     seconds: float
+
+
+class CheckRequest(BaseModel):
+    urls: list[str] = Field(min_length=1, max_length=100)
