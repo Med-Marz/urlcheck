@@ -3,7 +3,7 @@ import pytest
 import respx
 
 from urlcheck.checker import check_url, check_urls
-from urlcheck.cli import read_urls, split_valid_urls
+from urlcheck.cli import read_urls, run, split_valid_urls
 
 
 @pytest.fixture(autouse=True)
@@ -107,3 +107,16 @@ def test_split_valid_urls_separates_bad_entries():
 
     assert valid == ["https://a.example"]
     assert invalid == ["github.com", "ftp://b.example", "http://", "not a url"]
+
+
+@respx.mock
+async def test_run_checks_valid_urls_and_skips_invalid(tmp_path):
+    respx.get("https://a.example").mock(return_value=httpx.Response(200))
+    file = tmp_path / "urls.txt"
+    file.write_text("https://a.example\nnot a url\n")
+
+    results = await run(file)
+
+    assert len(results) == 1
+    assert results[0]["url"] == "https://a.example"
+    assert results[0]["status"] == 200

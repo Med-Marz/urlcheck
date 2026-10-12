@@ -1,0 +1,5 @@
+https://github.com
+https://python.org
+# a comment, ignored
+github.com
+https://this-does-not-exist-12345.com
