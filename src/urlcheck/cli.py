@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import json
 import sys
@@ -41,12 +42,47 @@ async def run(path):
     return await check_urls(valid)
 
 
+def summarize(results):
+    total = len(results)
+    succeeded = 0
+    total_seconds = 0
+    for result in results:
+        total_seconds += result["seconds"]
+        if result["error"] is None and result["status"] is not None and result["status"] < 400:
+            succeeded += 1
+    average = round(total_seconds / total, 2) if total > 0 else 0
+    return {
+        "total": total,
+        "succeeded": succeeded,
+        "failed": total - succeeded,
+        "average_seconds": average,
+    }
+
+
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python src/urlcheck/cli.py urls.txt", file=sys.stderr)
-        sys.exit(2)
-    results = asyncio.run(run(sys.argv[1]))
-    print(json.dumps(results, indent=2))
+    parser = argparse.ArgumentParser(
+        prog="urlcheck", description="Check whether websites respond."
+    )
+    parser.add_argument("file", help="text file with one URL per line")
+    parser.add_argument("--output", help="save the JSON report to this file")
+    args = parser.parse_args()
+
+    results = asyncio.run(run(args.file))
+    report = json.dumps(results, indent=2)
+
+    if args.output:
+        with open(args.output, "w") as out:
+            out.write(report)
+        print(f"Report saved to {args.output}", file=sys.stderr)
+    else:
+        print(report)
+
+    summary = summarize(results)
+    print(
+        f"Checked {summary['total']}: {summary['succeeded']} ok, "
+        f"{summary['failed']} failed, average {summary['average_seconds']} s",
+        file=sys.stderr,
+    )
 
 
 if __name__ == "__main__":

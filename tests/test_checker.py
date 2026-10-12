@@ -3,7 +3,7 @@ import pytest
 import respx
 
 from urlcheck.checker import check_url, check_urls
-from urlcheck.cli import read_urls, run, split_valid_urls
+from urlcheck.cli import read_urls, run, split_valid_urls, summarize
 
 
 @pytest.fixture(autouse=True)
@@ -120,3 +120,20 @@ async def test_run_checks_valid_urls_and_skips_invalid(tmp_path):
     assert len(results) == 1
     assert results[0]["url"] == "https://a.example"
     assert results[0]["status"] == 200
+
+
+def test_summarize_counts_successes_and_failures():
+    results = [
+        {"url": "a", "status": 200, "error": None, "attempts": 1, "seconds": 1.0},
+        {"url": "b", "status": 404, "error": None, "attempts": 1, "seconds": 2.0},
+        {"url": "c", "status": None, "error": "timeout", "attempts": 3, "seconds": 3.0},
+    ]
+
+    summary = summarize(results)
+
+    assert summary == {
+        "total": 3,
+        "succeeded": 1,
+        "failed": 2,
+        "average_seconds": 2.0,
+    }
