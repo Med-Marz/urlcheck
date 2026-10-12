@@ -3,6 +3,7 @@ import pytest
 import respx
 
 from urlcheck.checker import check_url, check_urls
+from urlcheck.cli import read_urls
 
 
 @pytest.fixture(autouse=True)
@@ -90,3 +91,10 @@ async def test_check_urls_returns_all_results_in_order():
     )
 
     assert [r["status"] for r in results] == [200, 404, 200]
+
+
+def test_read_urls_skips_blank_lines_and_comments(tmp_path):
+    file = tmp_path / "urls.txt"
+    file.write_text("https://a.example\n\n# a comment\n  https://b.example  \n")
+
+    assert read_urls(file) == ["https://a.example", "https://b.example"]
