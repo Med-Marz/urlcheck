@@ -2,6 +2,8 @@ import asyncio
 import time
 import httpx
 
+from urlcheck.models import CheckResult
+
 
 async def check_url(url, max_attempts=3, timeout=5.0):
     start = time.time()
@@ -30,13 +32,14 @@ async def check_url(url, max_attempts=3, timeout=5.0):
             await asyncio.sleep(2 ** (attempt - 1))
 
     end = time.time()
-    return {
-        "url": url,
-        "status": status,
-        "error": error,
-        "attempts": attempts,
-        "seconds": round(end - start, 2),
-    }
+    result = CheckResult(
+        url=url,
+        status=status,
+        error=error,
+        attempts=attempts,
+        seconds=round(end - start, 2),
+    )
+    return result.model_dump()
 
 
 async def check_urls(urls, max_concurrent=10, timeout=5.0):

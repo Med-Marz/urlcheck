@@ -12,6 +12,11 @@ from urlcheck.cli import (
     summarize,
 )
 
+from pydantic import ValidationError
+
+from urlcheck.models import CheckResult
+
+
 @pytest.fixture(autouse=True)
 def no_sleep(monkeypatch):
     async def fake_sleep(seconds):
@@ -174,3 +179,22 @@ def test_flag_wins_over_environment(monkeypatch):
     args = build_parser().parse_args(["urls.txt", "--timeout", "2"])
 
     assert args.timeout == 2.0
+
+
+def test_check_result_accepts_valid_data():
+    result = CheckResult(
+        url="https://a.example", status=200, error=None, attempts=1, seconds=0.5
+    )
+
+    assert result.status == 200
+
+
+def test_check_result_rejects_wrong_types():
+    with pytest.raises(ValidationError):
+        CheckResult(
+            url="https://a.example",
+            status="banana",
+            error=None,
+            attempts=1,
+            seconds=0.5,
+        )
