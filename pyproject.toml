@@ -12,7 +12,7 @@ dependencies = ["httpx", "pydantic"]
 urlcheck = "urlcheck.cli:main"
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-asyncio", "respx"]
+dev = ["pytest", "pytest-asyncio", "respx", "ruff"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
