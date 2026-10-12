@@ -1,6 +1,7 @@
 import httpx
 import pytest
 import respx
+from pydantic import ValidationError
 
 from urlcheck.checker import check_url, check_urls
 from urlcheck.cli import (
@@ -11,9 +12,6 @@ from urlcheck.cli import (
     split_valid_urls,
     summarize,
 )
-
-from pydantic import ValidationError
-
 from urlcheck.models import CheckResult
 
 
@@ -65,9 +63,7 @@ async def test_server_error_then_success():
 
 @respx.mock
 async def test_gives_up_after_three_attempts():
-    route = respx.get("https://example.com").mock(
-        return_value=httpx.Response(500)
-    )
+    route = respx.get("https://example.com").mock(return_value=httpx.Response(500))
 
     result = await check_url("https://example.com")
 
@@ -159,7 +155,9 @@ def test_exit_code_is_one_when_any_fails():
 
 
 def test_flags_override_defaults():
-    args = build_parser().parse_args(["urls.txt", "--timeout", "2", "--concurrency", "3"])
+    args = build_parser().parse_args(
+        ["urls.txt", "--timeout", "2", "--concurrency", "3"]
+    )
 
     assert args.timeout == 2.0
     assert args.concurrency == 3

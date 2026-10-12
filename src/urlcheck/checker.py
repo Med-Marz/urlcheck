@@ -1,7 +1,8 @@
 import asyncio
-import time
-import httpx
 import random
+import time
+
+import httpx
 
 from urlcheck.models import CheckResult
 

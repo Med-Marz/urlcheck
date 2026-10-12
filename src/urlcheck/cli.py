@@ -49,7 +49,11 @@ def summarize(results):
     total_seconds = 0
     for result in results:
         total_seconds += result["seconds"]
-        if result["error"] is None and result["status"] is not None and result["status"] < 400:
+        if (
+            result["error"] is None
+            and result["status"] is not None
+            and result["status"] < 400
+        ):
             succeeded += 1
     average = round(total_seconds / total, 2) if total > 0 else 0
     return {
@@ -75,13 +79,13 @@ def build_parser():
     parser.add_argument(
         "--timeout",
         type=float,
-        default=float(os.environ.get("URLCHECK_TIMEOUT", 5.0)),
+        default=float(os.environ.get("URLCHECK_TIMEOUT", "5.0")),
         help="seconds to wait per request (env: URLCHECK_TIMEOUT, default 5)",
     )
     parser.add_argument(
         "--concurrency",
         type=int,
-        default=int(os.environ.get("URLCHECK_CONCURRENCY", 10)),
+        default=int(os.environ.get("URLCHECK_CONCURRENCY", "10")),
         help="maximum simultaneous checks (env: URLCHECK_CONCURRENCY, default 10)",
     )
     return parser
