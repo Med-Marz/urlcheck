@@ -59,6 +59,12 @@ def summarize(results):
     }
 
 
+def exit_code(summary):
+    if summary["failed"] > 0:
+        return 1
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="urlcheck", description="Check whether websites respond."
@@ -83,6 +89,7 @@ def main():
         f"{summary['failed']} failed, average {summary['average_seconds']} s",
         file=sys.stderr,
     )
+    sys.exit(exit_code(summary))
 
 
 if __name__ == "__main__":

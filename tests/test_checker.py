@@ -3,7 +3,7 @@ import pytest
 import respx
 
 from urlcheck.checker import check_url, check_urls
-from urlcheck.cli import read_urls, run, split_valid_urls, summarize
+from urlcheck.cli import exit_code, read_urls, run, split_valid_urls, summarize
 
 
 @pytest.fixture(autouse=True)
@@ -137,3 +137,11 @@ def test_summarize_counts_successes_and_failures():
         "failed": 2,
         "average_seconds": 2.0,
     }
+
+
+def test_exit_code_is_zero_when_all_succeed():
+    assert exit_code({"total": 2, "succeeded": 2, "failed": 0}) == 0
+
+
+def test_exit_code_is_one_when_any_fails():
+    assert exit_code({"total": 2, "succeeded": 1, "failed": 1}) == 1
