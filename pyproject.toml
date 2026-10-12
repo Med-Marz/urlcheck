@@ -8,6 +8,9 @@ version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = ["httpx"]
 
+[project.scripts]
+urlcheck = "urlcheck.cli:main"
+
 [project.optional-dependencies]
 dev = ["pytest", "pytest-asyncio", "respx"]
 
