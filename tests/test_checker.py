@@ -198,3 +198,20 @@ def test_check_result_rejects_wrong_types():
             attempts=1,
             seconds=0.5,
         )
+
+
+@respx.mock
+async def test_retry_wait_has_jitter(monkeypatch):
+    waits = []
+
+    async def record_sleep(seconds):
+        waits.append(seconds)
+
+    monkeypatch.setattr("urlcheck.checker.asyncio.sleep", record_sleep)
+    respx.get("https://example.com").mock(return_value=httpx.Response(500))
+
+    await check_url("https://example.com")
+
+    assert len(waits) == 2
+    assert 1 <= waits[0] <= 1.5
+    assert 2 <= waits[1] <= 2.5

@@ -1,6 +1,7 @@
 import asyncio
 import time
 import httpx
+import random
 
 from urlcheck.models import CheckResult
 
@@ -29,7 +30,8 @@ async def check_url(url, max_attempts=3, timeout=5.0):
             if not failed or attempt == max_attempts:
                 break
 
-            await asyncio.sleep(2 ** (attempt - 1))
+            delay = 2 ** (attempt - 1) + random.uniform(0, 0.5)
+            await asyncio.sleep(delay)
 
     end = time.time()
     result = CheckResult(
