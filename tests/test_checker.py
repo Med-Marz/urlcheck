@@ -3,7 +3,7 @@ import pytest
 import respx
 
 from urlcheck.checker import check_url, check_urls
-from urlcheck.cli import read_urls
+from urlcheck.cli import read_urls, split_valid_urls
 
 
 @pytest.fixture(autouse=True)
@@ -98,3 +98,12 @@ def test_read_urls_skips_blank_lines_and_comments(tmp_path):
     file.write_text("https://a.example\n\n# a comment\n  https://b.example  \n")
 
     assert read_urls(file) == ["https://a.example", "https://b.example"]
+
+
+def test_split_valid_urls_separates_bad_entries():
+    valid, invalid = split_valid_urls(
+        ["https://a.example", "github.com", "ftp://b.example", "http://", "not a url"]
+    )
+
+    assert valid == ["https://a.example"]
+    assert invalid == ["github.com", "ftp://b.example", "http://", "not a url"]
