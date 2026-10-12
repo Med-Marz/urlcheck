@@ -1,8 +1,10 @@
 import httpx
 import pytest
 import respx
+from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+from urlcheck.api import app
 from urlcheck.checker import check_url, check_urls
 from urlcheck.cli import (
     build_parser,
@@ -213,3 +215,12 @@ async def test_retry_wait_has_jitter(monkeypatch):
     assert len(waits) == 2
     assert 1 <= waits[0] <= 1.5
     assert 2 <= waits[1] <= 2.5
+
+
+def test_health_returns_ok():
+    client = TestClient(app)
+
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
