@@ -227,11 +227,16 @@ def test_health_returns_ok():
 
 
 @respx.mock
-def test_check_endpoint_returns_results():
+def test_check_endpoint_returns_results(monkeypatch):
+    monkeypatch.setenv("URLCHECK_API_KEY", "secret")
     respx.get("https://a.example").mock(return_value=httpx.Response(200))
     client = TestClient(app)
 
-    response = client.post("/check", json={"urls": ["https://a.example"]})
+    response = client.post(
+        "/check",
+        json={"urls": ["https://a.example"]},
+        headers={"X-API-Key": "secret"},
+    )
 
     assert response.status_code == 200
     body = response.json()
@@ -240,18 +245,70 @@ def test_check_endpoint_returns_results():
     assert body[0]["status"] == 200
 
 
-def test_check_endpoint_rejects_empty_list():
+def test_check_endpoint_rejects_empty_list(monkeypatch):
+    monkeypatch.setenv("URLCHECK_API_KEY", "secret")
     client = TestClient(app)
 
-    response = client.post("/check", json={"urls": []})
+    response = client.post(
+        "/check",
+        json={"urls": []},
+        headers={"X-API-Key": "secret"},
+    )
 
     assert response.status_code == 422
 
 
-def test_check_endpoint_rejects_more_than_100_urls():
+def test_check_endpoint_rejects_more_than_100_urls(monkeypatch):
+    monkeypatch.setenv("URLCHECK_API_KEY", "secret")
     client = TestClient(app)
     urls = [f"https://site{i}.example" for i in range(101)]
 
-    response = client.post("/check", json={"urls": urls})
+    response = client.post(
+        "/check",
+        json={"urls": urls},
+        headers={"X-API-Key": "secret"},
+    )
 
     assert response.status_code == 422
+
+
+def test_check_without_key_is_rejected(monkeypatch):
+    monkeypatch.setenv("URLCHECK_API_KEY", "secret")
+    client = TestClient(app)
+
+    response = client.post("/check", json={"urls": ["https://a.example"]})
+
+    assert response.status_code == 401
+
+
+def test_check_with_wrong_key_is_rejected(monkeypatch):
+    monkeypatch.setenv("URLCHECK_API_KEY", "secret")
+    client = TestClient(app)
+
+    response = client.post(
+        "/check",
+        json={"urls": ["https://a.example"]},
+        headers={"X-API-Key": "wrong"},
+    )
+
+    assert response.status_code == 401
+
+
+def test_check_is_rejected_when_server_has_no_key(monkeypatch):
+    monkeypatch.delenv("URLCHECK_API_KEY", raising=False)
+    client = TestClient(app)
+
+    response = client.post(
+        "/check",
+        json={"urls": ["https://a.example"]},
+        headers={"X-API-Key": ""},
+    )
+
+    assert response.status_code == 401
+
+
+def test_health_needs_no_key(monkeypatch):
+    monkeypatch.delenv("URLCHECK_API_KEY", raising=False)
+    client = TestClient(app)
+
+    assert client.get("/health").status_code == 200
