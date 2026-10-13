@@ -61,6 +61,24 @@ A check counts as failed on a timeout, a connection error, or a status of 400 or
 
 A command line flag wins over the environment variable.
 
+## API
+
+Start the server with a key:
+
+```bash
+URLCHECK_API_KEY=your-key uvicorn urlcheck.api:app
+```
+
+- `GET /health` returns `{"status": "ok"}` and needs no key.
+- `POST /check` takes `{"urls": [...]}` (1 to 100 URLs) and needs an `X-API-Key` header matching `URLCHECK_API_KEY`. Without a valid key it returns 401. If the server has no key configured, every request is refused.
+
+```bash
+curl -X POST http://127.0.0.1:8000/check \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-key" \
+  -d '{"urls": ["https://python.org"]}'
+```
+
 ## Retry behavior
 
 Timeouts, connection errors and server errors (status 500 and above) are retried up to 3 attempts, waiting about 1 s, then 2 s, each plus a small random delay. Other responses, such as 403 or 404, are not retried.
