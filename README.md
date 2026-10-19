@@ -92,3 +92,13 @@ ruff format --check .
 ```
 
 Tests use a fake web server, so they run offline.
+
+## Deployment
+
+The API runs on Render's free tier at `https://urlcheck-l2i9.onrender.com`.
+
+- `GET /health` needs no key.
+- `POST /check` needs the `X-API-Key` header.
+- Free services sleep after 15 minutes without traffic, so the first request after idle can take about a minute.
+
+Every pull request runs CI (lint, format check, tests, Docker build). A merge to `main` is deployed by Render only after its CI checks pass.
